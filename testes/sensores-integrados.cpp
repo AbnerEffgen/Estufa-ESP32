@@ -6,8 +6,8 @@
 // WIFI
 //=======================
 
-const char *ssid = "Area 121";
-const char *password = "computacao123";
+const char *ssid = "NOME DA REDE";
+const char *password = "SENHA DA REDE";
 
 //=======================
 // DHT22
