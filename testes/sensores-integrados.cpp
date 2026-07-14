@@ -1,33 +1,33 @@
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <time.h>
-#include "DHT.h"
+#include <DHT.h>
 
-//=======================
+//====================================================
 // WIFI
-//=======================
+//====================================================
 
-const char *ssid = "NOME DA REDE";
-const char *password = "SENHA DA REDE";
+const char *ssid = "Area 121";
+const char *password = "computacao123";
 
-//=======================
-// DHT22
-//=======================
+//====================================================
+// PINOS
+//====================================================
 
-#define DHTPIN D2
+#define DHTPIN 4
+
+#define TRIG_PIN 18
+#define ECHO_PIN 19
+
+#define LDR_PIN 34
+#define SOLO_PIN 35
+
 #define DHTTYPE DHT22
 
 DHT dht(DHTPIN, DHTTYPE);
 
-//=======================
-// HC-SR04
-//=======================
-
-#define TRIG D5
-#define ECHO D6
-
-//=======================
-// Estrutura das leituras
-//=======================
+//====================================================
+// Estrutura
+//====================================================
 
 struct LeituraSensores
 {
@@ -40,16 +40,17 @@ struct LeituraSensores
     bool hcOk;
     float distancia;
 
-    int analogico;
+    int luminosidade;
+    int umidadeSolo;
 
     time_t timestamp;
 };
 
 LeituraSensores leitura;
 
-//=======================
+//====================================================
 // WIFI
-//=======================
+//====================================================
 
 void conectarWiFi()
 {
@@ -66,9 +67,9 @@ void conectarWiFi()
     Serial.println(" OK");
 }
 
-//=======================
+//====================================================
 // RTC
-//=======================
+//====================================================
 
 void iniciarRTC()
 {
@@ -76,7 +77,7 @@ void iniciarRTC()
                "pool.ntp.org",
                "time.nist.gov");
 
-    Serial.print("Sincronizando relógio");
+    Serial.print("Sincronizando relogio");
 
     while (time(nullptr) < 100000)
     {
@@ -87,17 +88,18 @@ void iniciarRTC()
     Serial.println(" OK");
 }
 
-//=======================
-// Leitura
-//=======================
+//====================================================
+// Sensores
+//====================================================
 
 void lerSensores()
 {
-    // RTC
+    //---------------- RTC ----------------
+
     leitura.timestamp = time(nullptr);
     leitura.rtcOk = leitura.timestamp > 100000;
 
-    // DHT22
+    //---------------- DHT22 ----------------
 
     leitura.temperatura = dht.readTemperature();
     leitura.umidade = dht.readHumidity();
@@ -106,21 +108,25 @@ void lerSensores()
         !(isnan(leitura.temperatura) ||
           isnan(leitura.umidade));
 
-    // Sensor Analógico
+    //---------------- LDR ----------------
 
-    leitura.analogico = analogRead(A0);
+    leitura.luminosidade = analogRead(LDR_PIN);
 
-    // HC-SR04
+    //---------------- Solo ----------------
 
-    digitalWrite(TRIG, LOW);
+    leitura.umidadeSolo = analogRead(SOLO_PIN);
+
+    //---------------- HC-SR04 ----------------
+
+    digitalWrite(TRIG_PIN, LOW);
     delayMicroseconds(2);
 
-    digitalWrite(TRIG, HIGH);
+    digitalWrite(TRIG_PIN, HIGH);
     delayMicroseconds(10);
 
-    digitalWrite(TRIG, LOW);
+    digitalWrite(TRIG_PIN, LOW);
 
-    long duracao = pulseIn(ECHO, HIGH, 30000);
+    long duracao = pulseIn(ECHO_PIN, HIGH, 30000);
 
     if (duracao == 0)
     {
@@ -130,18 +136,18 @@ void lerSensores()
     else
     {
         leitura.hcOk = true;
-        leitura.distancia = duracao * 0.034 / 2.0;
+        leitura.distancia = duracao * 0.0343 / 2.0;
     }
 }
 
-//=======================
+//====================================================
 // LOG
-//=======================
+//====================================================
 
 void imprimirLog()
 {
     Serial.println();
-    Serial.println("===========================================");
+    Serial.println("=========================================");
 
     if (leitura.rtcOk)
     {
@@ -160,52 +166,56 @@ void imprimirLog()
         Serial.println("RTC: NAO CONECTADO");
     }
 
-    Serial.println("-------------------------------------------");
+    Serial.println("-----------------------------------------");
 
     if (leitura.dhtOk)
     {
-        Serial.printf("Temperatura : %.2f C\n", leitura.temperatura);
-        Serial.printf("Umidade Ar  : %.2f %%\n", leitura.umidade);
+        Serial.printf("Temperatura   : %.2f C\n", leitura.temperatura);
+        Serial.printf("Umidade Ar    : %.2f %%\n", leitura.umidade);
     }
     else
     {
-        Serial.println("DHT22       : NAO CONECTADO");
+        Serial.println("DHT22         : NAO CONECTADO");
     }
 
-    Serial.printf("Sensor A0   : %d\n", leitura.analogico);
+    Serial.printf("Luminosidade  : %d\n", leitura.luminosidade);
+    Serial.printf("Umidade Solo  : %d\n", leitura.umidadeSolo);
 
     if (leitura.hcOk)
     {
-        Serial.printf("HC-SR04     : %.2f cm\n", leitura.distancia);
+        Serial.printf("Nivel Agua    : %.2f cm\n", leitura.distancia);
     }
     else
     {
-        Serial.println("HC-SR04     : NAO CONECTADO");
+        Serial.println("HC-SR04       : NAO CONECTADO");
     }
 
-    Serial.println("===========================================");
+    Serial.println("=========================================");
 }
 
-//=======================
+//====================================================
 // SETUP
-//=======================
+//====================================================
 
 void setup()
 {
     Serial.begin(115200);
 
-    pinMode(TRIG, OUTPUT);
-    pinMode(ECHO, INPUT);
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+
+    analogReadResolution(12);
 
     dht.begin();
 
     conectarWiFi();
+
     iniciarRTC();
 }
 
-//=======================
+//====================================================
 // LOOP
-//=======================
+//====================================================
 
 void loop()
 {
