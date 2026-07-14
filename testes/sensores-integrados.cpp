@@ -6,8 +6,8 @@
 // WIFI
 //====================================================
 
-const char *ssid = "Area 121";
-const char *password = "computacao123";
+const char *ssid = "";
+const char *password = "";
 
 //====================================================
 // PINOS

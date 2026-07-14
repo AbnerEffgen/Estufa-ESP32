@@ -5,8 +5,8 @@
 // WIFI
 //====================================================
 
-#define WIFI_SSID "Area 121"
-#define WIFI_PASSWORD "computacao123"
+#define WIFI_SSID "SENHA DO WIFI"
+#define WIFI_PASSWORD "NOME DA REDE WIFI"
 
 //====================================================
 // PINOS
